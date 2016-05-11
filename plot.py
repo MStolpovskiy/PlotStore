@@ -1,6 +1,9 @@
 from inspect import currentframe, getlineno, getsourcelines, getsourcefile
 
 class Plot(object):
+    '''
+    Object to store a plot along with all the variables necessary for it.
+    '''
     def __init__(self, pkl, name):
         self.name = name
         self.dims = 0
