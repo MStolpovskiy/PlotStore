@@ -2,9 +2,8 @@ from contextlib import contextmanager
 import matplotlib.pyplot as mp
 import cPickle as pkl
 from copy import copy
-from formlayout import fedit
-from pdb import set_trace
 import os.path
+from .plot import Plot
 
 class PlotStore(object):
     def __init__(self, name=None, options_or_parent_dir=None):
@@ -71,6 +70,8 @@ A directory with plot-objects or other directories.
     
     def _cd(self, path):
         if path == '~':
+            if self.path == 'Main':
+                return
             while self.parent_dir is not None:
                 self._cd('..')
         elif path == '..':
@@ -93,25 +94,23 @@ A directory with plot-objects or other directories.
                 raise ValueError('Wrong path')
     
     def get_plot(self, name):
-        if isinstance(self.dict[name], mp.Figure):
+        if isinstance(self.dict[name], Plot):
             return self.dict[name]
         return None
     
     def draw(self, name):
-        temp_fig = mp.figure()
-        m = mp.get_current_fig_manager()
-        fig = self.get_plot(name)
-        m.canvas.figure = fig
-        del temp_fig
-        fig.show()
+        p = self.get_plot(name)
+        p.draw()
 
     def dump(self):
         path = self.path[:]
-        self.cd('~')
+        if path != 'Main':
+            self.cd('~')
         if self.file != None:
             with open(self.file, 'w') as f:
                 pkl.dump(self, f)
-        self.cd(path)
+        if path != 'Main':
+            self.cd(path)
 
     def load(self):
         inter = mp.isinteractive()
@@ -130,5 +129,18 @@ A directory with plot-objects or other directories.
     def new_plot(self, name):
         f = mp.figure()
         yield f
-        self.dict[name] = f# mp.figure(mp.get_fignums()[-1])
+        axes = []
+        for ax in f.axes:
+            d = {}
+            d['position'] = ax.get_position()
+            lines = []
+            for l in ax.get_lines():
+                lines.append([l.get_xdata(), l.get_ydata(),
+                              l.get_color(), l.get_linestyle(),
+                              l.get_alpha(), l.get_label(),
+                              l.get_marker(), l.get_linewidth(),
+                              l.get_markersize()])
+            d['lines'] = lines
+            axes.append(d)
+        self.dict[name] = Plot(name, axes)
 
