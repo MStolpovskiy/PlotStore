@@ -2,7 +2,9 @@ from contextlib import contextmanager
 import matplotlib.pyplot as mp
 import cPickle as pkl
 from copy import copy
+from formlayout import fedit
 from pdb import set_trace
+import os.path
 
 class PlotStore(object):
     def __init__(self, name=None, options_or_parent_dir=None):
@@ -29,7 +31,9 @@ A directory with plot-objects or other directories.
         if self.options is not None and self.options not in 'raw':
             raise ValueError('Wrong options')
         if self.options is not None and self.options in 'ra':
-            self.load()
+            if self.options == 'a' and os.path.isfile(self.file) or \
+               self.options == 'r':
+                self.load()
 
     def _create_path(self, name):
         name = name.replace('/', '')
@@ -50,11 +54,11 @@ A directory with plot-objects or other directories.
         keys.sort()
         for k in keys:
             if isinstance(self.dict[k], PlotStore):
-                print tab + '\033[1m' + k
+                print tab + '\033[1m' + k + '\033[0m'
                 self.dict[k]._ls(self.dict[k].list(),
                                  tab=tab+'    ')
             else:
-                print tab + '\033[0m' + k
+                print tab + k
 
     def mkdir(self, name):
         d = PlotStore(name, self)
@@ -83,22 +87,28 @@ A directory with plot-objects or other directories.
     def draw(self, name):
         temp_fig = mp.figure()
         m = mp.get_current_fig_manager()
-        m.canvas.figure = self.get_plot(name)
+        fig = self.get_plot(name)
+        m.canvas.figure = fig
         del temp_fig
-        mp.show()
+        fig.show()
 
     def dump(self):
         if self.file != None:
-            options = 'w' if self.options == None else self.options
-            with open(self.file, options) as f:
+            with open(self.file, 'w') as f:
                 pkl.dump(self, f)
 
     def load(self):
+        inter = mp.isinteractive()
+        if inter: mp.ioff()
+        fig_list = mp.get_fignums()
         if self.file != None:
-            options = 'r' if self.options == None else self.options
-            with open(self.file, options) as f:
-                ps = load(f)
+            with open(self.file, 'r') as f:
+                ps = pkl.load(f)
             self.dict = ps.dict
+        for p in mp.get_fignums():
+            if p not in fig_list:
+                mp.close(p)
+        if inter: mp.ion()
         
     @contextmanager
     def new_plot(self, name):
