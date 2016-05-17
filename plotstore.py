@@ -66,18 +66,31 @@ A directory with plot-objects or other directories.
 
     def cd(self, path):
         path = path.split('/')
-        d = copy(self)
         for p in path:
-            d = d._cd(p)
-        return d
+            self._cd(p)
     
     def _cd(self, path):
-        if path == '..':
+        if path == '~':
+            while self.parent_dir is not None:
+                self._cd('..')
+        elif path == '..':
             if self.parent_dir is None:
                 raise ValueError('Cannot go up on the dir tree')
-            return self.parent_dir
+            self.path = '/'.join(self.path.split('/')[:-1])
+            if 'parent_dir' in self.parent_dir.__dict__.keys():
+                pd = self.parent_dir.parent_dir
+            else:
+                pd = None
+            self.dict = self.parent_dir.dict
+            self.parent_dir = pd
         else:
-            return self.dict[path]
+            if path in self.dict.keys() and \
+               isinstance(self.dict[path], PlotStore):
+                self.parent_dir = copy(self)
+                self.path += '/' + path
+                self.dict = self.dict[path].dict
+            else:
+                raise ValueError('Wrong path')
     
     def get_plot(self, name):
         if isinstance(self.dict[name], mp.Figure):
@@ -93,9 +106,12 @@ A directory with plot-objects or other directories.
         fig.show()
 
     def dump(self):
+        path = self.path[:]
+        self.cd('~')
         if self.file != None:
             with open(self.file, 'w') as f:
                 pkl.dump(self, f)
+        self.cd(path)
 
     def load(self):
         inter = mp.isinteractive()
