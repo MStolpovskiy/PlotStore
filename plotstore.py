@@ -4,6 +4,7 @@ import cPickle as pkl
 from copy import copy
 import os.path
 from .plot import Plot
+import re
 
 class PlotStore(object):
     def __init__(self, name=None, options_or_parent_dir=None):
@@ -94,22 +95,37 @@ A directory with plot-objects or other directories.
                 raise ValueError('Wrong path')
     
     def get_plot(self, name):
+        if type(name) in [list, tuple]:
+            return [self.get_plot(n) for n in name]
         if isinstance(self.dict[name], Plot):
             return self.dict[name]
         return None
+
+    def list(self, name=None):
+        if name is None:
+            name = '.*'
+        else:
+            name = name.replace('*', '.*')
+            name = name.replace('?', '.')
+        return [n for n in self.dict.keys() \
+                if isinstance(self.dict[n], Plot) and \
+                   re.match(name, n)]
     
     def draw(self, name):
         p = self.get_plot(name)
         p.draw()
 
     def dump(self):
-        path = self.path[:]
+        if self.options == 'r':
+            raise ValueError("Option 'r' is for read-only")
+        path = self.pwd
         if path != 'Main':
             self.cd('~')
         if self.file != None:
             with open(self.file, 'w') as f:
                 pkl.dump(self, f)
         if path != 'Main':
+            path = '/'.join(path.split('/')[1:])
             self.cd(path)
 
     def load(self):
@@ -140,7 +156,19 @@ A directory with plot-objects or other directories.
                               l.get_alpha(), l.get_label(),
                               l.get_marker(), l.get_linewidth(),
                               l.get_markersize()])
+            if ax.get_legend() is not None:
+                leg = ax.get_legend().properties()
+                d['legend'] = [leg['title'].get_text(),
+                               leg['frame_on'],]
+            else:
+                d['legend'] = None
             d['lines'] = lines
             axes.append(d)
         self.dict[name] = Plot(name, axes)
 
+    def mv(self, what, where):
+        if isinstance(self.dict[where], PlotStore):
+            keys = self.list(what)
+            for k in keys:
+                self.dict[where].dict[k] = self.dict[k]
+                self.dict.pop(k)

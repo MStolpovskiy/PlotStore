@@ -15,3 +15,6 @@ class Plot(object):
             for l in lines:
                 a.plot(l[0], l[1], c=l[2], ls=l[3], alpha=l[4],
                        label=l[5], marker=l[6], lw=l[7], markersize=l[8])
+            leg = ax['legend']
+            if leg is not None:
+                a.legend(title=leg[0], frameon=leg[1])
