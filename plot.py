@@ -10,11 +10,25 @@ class Plot(object):
         fig = mp.figure()
         for iax, ax in enumerate(self.axes):
             a = fig.add_subplot(iax + 1, len(self.axes), 1)
-            a.set_position(ax['position'])
-            lines = ax['lines']
+            a.set_position(ax.get_position())
+            lines = ax.get_lines()
+            cont = ax.containers
             for l in lines:
-                a.plot(l[0], l[1], c=l[2], ls=l[3], alpha=l[4],
-                       label=l[5], marker=l[6], lw=l[7], markersize=l[8])
-            leg = ax['legend']
+#                dobreak = False
+#                for c in cont:
+#                    if l in c:
+#                        dobreak = True
+#                        break
+#                if dobreak: break
+                a.plot(l.get_xdata(), l.get_ydata(),
+                       c=l.get_c(), ls=l.get_ls(), alpha=l.get_alpha(),
+                       label=l.get_label(), marker=l.get_marker(),
+                       lw=l.get_lw(), markersize=l.get_markersize())
+            for c in cont:
+                a.containers.append(c)
+            leg = ax.get_legend()
             if leg is not None:
-                a.legend(title=leg[0], frameon=leg[1])
+                t = leg.get_title().get_text()
+                t = t if t != 'None' else ''
+                a.legend(title=t,
+                         frameon=leg.get_frame_on())

@@ -147,23 +147,7 @@ A directory with plot-objects or other directories.
         yield f
         axes = []
         for ax in f.axes:
-            d = {}
-            d['position'] = ax.get_position()
-            lines = []
-            for l in ax.get_lines():
-                lines.append([l.get_xdata(), l.get_ydata(),
-                              l.get_color(), l.get_linestyle(),
-                              l.get_alpha(), l.get_label(),
-                              l.get_marker(), l.get_linewidth(),
-                              l.get_markersize()])
-            if ax.get_legend() is not None:
-                leg = ax.get_legend().properties()
-                d['legend'] = [leg['title'].get_text(),
-                               leg['frame_on'],]
-            else:
-                d['legend'] = None
-            d['lines'] = lines
-            axes.append(d)
+            axes.append(ax)
         self.dict[name] = Plot(name, axes)
 
     def mv(self, what, where):
